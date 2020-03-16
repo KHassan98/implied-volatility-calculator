@@ -126,6 +126,8 @@ class Option:
                 c = self.market_price + self.spot - discount*self.strike # put-call parity
                 self.implied_volatility = newtonraphson(self.years_to_expiry,self.spot,self.strike,self.risk_free_rate,c,10**(-8),100)
 
+        if self.model_type == 'Bachelier':
+            self.implied_volatility = Bachelier(self.years_to_expiry,self.spot,self.strike,self.risk_free_rate,self.market_price,self.option_type)
 
         return self.implied_volatility
 
@@ -146,10 +148,18 @@ class Trades:
 
     def write_output(self, path_to_output):
         'Writes output csv to the given path'
+        vols = open(path_to_output,'w',newline='')
+        write_vols = csv.writer(vols)
+        write_vols.writerow(['ID','Spot','Strike','Risk-Free Rate','Years To Expiry','Option Type','Model Type','Implied Volatility','Market Price'])
+        for i in range(len(self.options)):
+            option = self.options[i]
+            try:
+                option.implied_volatility()
+            except:
+                continue
+            write_vols.writerow([i,option.spot,option.strike,option.risk_free_rate,option.years_to_expiry,option.option_type,option.model_type,option.implied_volatility,option.market_price])
 
-trade1 = Option('Stock',100,0.05,30,100,'Call','BlackScholes',1)
-trade1.implied_volatility()
-p = 1 - 100 + 100*math.exp(0.05*(30/365))
-trade2 = Option('Stock',100,0.05,30,100,'Put','BlackScholes',p)
-trade2.implied_volatility()
-assert(abs(trade1.implied_volatility - trade2.implied_volatility) < 10**(-8))
+
+# Replace with own input/output csvs as necessary
+trades = Trades("C:\\Users\\Khalid Hassan\\Downloads\\MakoInterviewPackIV\\input.csv")
+trades.write_output("C:\\Users\\Khalid Hassan\\Downloads\\MakoInterviewPackIV\\output.csv")
