@@ -55,8 +55,41 @@ def newtonraphson(t,S_t,K,r,m,tol,max_iters):
 
     return sigma_
 
-
 assert(0.0681 < newtonraphson(0.0822,100,100,0.05,1,10**(-8),100) < 0.0682)
+
+def gamma(x):
+    return phi(x) + norm(x)/x
+
+def Bachelier(t,S_t,K,r,m, option_type):
+    # Calculate Bachelier volatility from market price
+    # Calculations from https://jaeckel.000webhostapp.com/ImpliedNormalVolatility.pdf
+
+    D = math.exp(r*t)
+    F = S_t/D
+    if option_type == 'Call':
+        theta = 1
+    elif option_type == 'Put':
+        theta = -1
+
+    if F >= K:
+        gamma_star = -abs(m - (theta*(F-K)))/abs(K-F)
+    else:
+        gamma_star = -abs(m)/abs(K-F)
+    if gamma_star < gamma(-9/4):
+        g = 1/(gamma_star - 1/2)
+        e_ = (0.032114372355 - (g**2)*(0.016969777977 - (g**2)*(2.6207332461*10**(-3) - (g**2)*(9.606695286*10**(-5)))))
+        e_ = e_/(1 - (g**2)*(0.6635646938 - (g**2)*(0.14528712196 - (g**2)*(0.010472855461))))
+        x_ = g*(norm(0) + e_*(g**2))
+    else:
+        h = math.sqrt(-math.log(-gamma_star))
+        x_ = 9.4883409779 - h*(9.6320903635 - h*(0.58556997323 + 2.1464093351*h))
+        x_ = x_/(1- h*(0.65174820867 + h*(1.5120247828 + h*6.6437847132*10**(-5))))
+
+    q = (gamma(x_) - gamma_star)/norm(x_)
+
+    x_star = x_ + ((3*q*(x_**2))*(2 - q*x_*(2 + (x_)**2)))/(6 + q*x_*(-12 + x_*(6*q + x_*(-6 + q*x_*(3 + (x_)**2)))))
+
+    return abs(K-F)/abs(x_star*math.sqrt(t))
 
 
 class Option:
